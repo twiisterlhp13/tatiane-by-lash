@@ -10,6 +10,10 @@ import { createOrganization } from "@/lib/org-setup";
 import { randomToken, sha256 } from "@/lib/security";
 import { appUrl } from "@/lib/notify";
 
+function isRedirect(e: unknown) {
+  return typeof (e as { digest?: unknown })?.digest === "string" && (e as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
+
 export type FormState = { error?: string; ok?: string; fields?: Record<string, string> } | undefined;
 
 const signupSchema = z.object({
@@ -19,7 +23,17 @@ const signupSchema = z.object({
   terms: z.literal("on", { error: "É preciso aceitar os termos e a política de privacidade." }),
 });
 
-export async function signupAction(_: FormState, form: FormData): Promise<FormState> {
+export async function signupAction(state: FormState, form: FormData): Promise<FormState> {
+  try {
+    return await signupInner(state, form);
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    console.error("[signup] falhou", e);
+    return { error: "Não foi possível criar a conta agora. Tente de novo em instantes." };
+  }
+}
+
+async function signupInner(_: FormState, form: FormData): Promise<FormState> {
   const parsed = signupSchema.safeParse(Object.fromEntries(form));
   const fields = { name: String(form.get("name") ?? ""), email: String(form.get("email") ?? "") };
   if (!parsed.success) return { error: parsed.error.issues[0].message, fields };
@@ -42,7 +56,17 @@ const orgSchema = z.object({
   suggested: z.string().optional(),
 });
 
-export async function createOrgAction(_: FormState, form: FormData): Promise<FormState> {
+export async function createOrgAction(state: FormState, form: FormData): Promise<FormState> {
+  try {
+    return await createOrgInner(state, form);
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    console.error("[create-org] falhou", e);
+    return { error: "Não foi possível criar o negócio agora. Tente de novo em instantes." };
+  }
+}
+
+async function createOrgInner(_: FormState, form: FormData): Promise<FormState> {
   const user = await getSessionUser();
   if (!user) redirect("/entrar");
   const parsed = orgSchema.safeParse(Object.fromEntries(form));
@@ -63,7 +87,17 @@ export async function createOrgAction(_: FormState, form: FormData): Promise<For
 
 const MAX_FAILS = 5;
 
-export async function loginAction(_: FormState, form: FormData): Promise<FormState> {
+export async function loginAction(state: FormState, form: FormData): Promise<FormState> {
+  try {
+    return await loginInner(state, form);
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    console.error("[login] falhou", e);
+    return { error: "Não foi possível entrar agora. Tente de novo em instantes." };
+  }
+}
+
+async function loginInner(_: FormState, form: FormData): Promise<FormState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
   const next = String(form.get("next") ?? "");

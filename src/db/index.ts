@@ -30,7 +30,8 @@ function client() {
       prepare: false,
       max: isLocal ? 10 : 3,
       idle_timeout: 20,
-      connect_timeout: 15,
+      max_lifetime: 60 * 5,
+      connect_timeout: 10,
       ssl: isLocal ? false : "require",
     });
   }
