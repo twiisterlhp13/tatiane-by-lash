@@ -1,69 +1,51 @@
-import Image from "next/image";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CalendarCheck, Lock, Smartphone } from "lucide-react";
+import { getCtx } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  // Domínio próprio de um único negócio: a raiz leva direto à página de agendamento
+  if (process.env.DEFAULT_ORG_SLUG) redirect(`/${process.env.DEFAULT_ORG_SLUG}`);
+  const ctx = await getCtx();
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-dvh">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
+        <span className="font-display text-xl text-berry">Agenda</span>
+        <div className="flex gap-2 text-sm">
+          {ctx ? (
+            <Link href="/painel" className="rounded-full bg-berry px-5 py-2.5 font-medium text-white">Abrir painel</Link>
+          ) : (
+            <>
+              <Link href="/entrar" className="rounded-full px-4 py-2.5 text-ink-2 hover:bg-paper-2">Entrar</Link>
+              <Link href="/cadastro" className="rounded-full bg-berry px-5 py-2.5 font-medium text-white">Criar conta</Link>
+            </>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+      <section className="mx-auto max-w-3xl px-5 pb-16 pt-14 text-center sm:pt-24">
+        <p className="text-xs font-medium uppercase tracking-[0.25em] text-berry">Agenda online para quem atende com hora marcada</p>
+        <h1 className="mt-4 font-display text-4xl leading-[1.1] sm:text-6xl">Suas clientes agendam sozinhas. Você cuida do resto.</h1>
+        <p className="mx-auto mt-5 max-w-xl text-lg text-ink-2">Link de agendamento, agenda no celular, bloqueio de horários e lembretes automáticos. Sem planilha e sem troca infinita de mensagens.</p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link href="/cadastro" className="inline-flex min-h-12 items-center rounded-full bg-berry px-7 font-medium text-white">Começar grátis</Link>
         </div>
-      </main>
-    </div>
+      </section>
+      <section className="mx-auto grid max-w-5xl gap-4 px-5 pb-20 sm:grid-cols-3">
+        {[
+          { icon: CalendarCheck, title: "Agendamento 24h", text: "Só aparecem horários realmente livres, já descontando intervalos e bloqueios." },
+          { icon: Lock, title: "Bloqueie em segundos", text: "Médico, almoço, férias: feche a agenda sem expor o motivo para ninguém." },
+          { icon: Smartphone, title: "App no celular", text: "Instale o painel na tela inicial do Android e acompanhe tudo em tempo real." },
+        ].map((f) => (
+          <div key={f.title} className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-[var(--shadow-soft)]">
+            <f.icon className="text-berry" size={24} strokeWidth={1.7} />
+            <h2 className="mt-3 font-display text-xl">{f.title}</h2>
+            <p className="mt-1 text-sm text-ink-2">{f.text}</p>
+          </div>
+        ))}
+      </section>
+      <footer className="border-t border-line py-6 text-center text-xs text-muted">
+        <Link href="/termos" className="hover:underline">Termos de uso</Link> · <Link href="/privacidade" className="hover:underline">Privacidade</Link>
+      </footer>
+    </main>
   );
 }
