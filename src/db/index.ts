@@ -10,7 +10,9 @@ export function cleanUrl(url: string) {
 }
 
 function connectionString() {
-  const url = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  // Conexão sem o pooler em modo transação: o driver envia consultas em paralelo na mesma conexão,
+  // o que o pooler de transação do Supabase (porta 6543) não suporta bem e fazia requisições travarem.
+  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.DATABASE_URL;
   if (!url) {
     throw new Error("Defina POSTGRES_URL (ou DATABASE_URL) com a conexão do Postgres.");
   }
@@ -28,6 +30,8 @@ function client() {
     globalThis.__pgClient = postgres(url, {
       // O pooler do Supabase (modo transação) não suporta prepared statements.
       prepare: false,
+      // nenhuma consulta pode travar a requisição: falha rápido com erro claro
+      connection: isLocal ? {} : { statement_timeout: 15000, idle_in_transaction_session_timeout: 15000 },
       max: isLocal ? 10 : 3,
       idle_timeout: 20,
       max_lifetime: 60 * 5,
