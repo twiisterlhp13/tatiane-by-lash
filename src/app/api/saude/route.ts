@@ -27,6 +27,11 @@ export async function GET(req: NextRequest) {
     steps.transaction = Date.now() - t0;
     const [{ n }] = (await db.execute(sql`select count(*)::int as n from organizations`)) as unknown as { n: number }[];
     steps.organizations = n;
+    const orgs = await db.execute(sql`select o.slug, o.name, o.created_at,
+      (select count(*)::int from organization_members m where m.organization_id = o.id) as members,
+      (select count(*)::int from appointments a where a.organization_id = o.id) as appointments
+      from organizations o order by o.created_at`);
+    steps.orgs = JSON.stringify(orgs);
     return NextResponse.json({ ok: true, steps }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return NextResponse.json({ ok: false, steps, error: String((e as Error).message) }, { status: 500 });
