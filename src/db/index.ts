@@ -32,9 +32,11 @@ function client() {
       prepare: false,
       // nenhuma consulta pode travar a requisição: falha rápido com erro claro
       connection: isLocal ? {} : { statement_timeout: 15000, idle_in_transaction_session_timeout: 15000 },
-      max: isLocal ? 10 : 3,
-      idle_timeout: 20,
-      max_lifetime: 60 * 5,
+      // O pooler em modo sessão do Supabase aceita só 15 conexões no total, divididas entre todas as
+      // instâncias do servidor. Cada instância usa 1 conexão e a devolve logo que fica ociosa.
+      max: isLocal ? 10 : 1,
+      idle_timeout: isLocal ? 20 : 5,
+      max_lifetime: 60,
       connect_timeout: 10,
       ssl: isLocal ? false : "require",
     });
