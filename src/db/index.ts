@@ -1,18 +1,18 @@
 import "server-only";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
 import * as schema from "./schema";
 
-/** Remove parâmetros extras da URL (ex.: "?sslmode=require&supa=..." da integração Supabase/Vercel),
- *  que o driver repassaria ao servidor como configuração. O SSL é definido explicitamente abaixo. */
+/** Remove parâmetros extras da URL (ex.: "?sslmode=require&supa=..." da integração Supabase/Vercel).
+ *  O SSL é definido explicitamente abaixo. */
 export function cleanUrl(url: string) {
   return url.split("?")[0];
 }
 
 function connectionString() {
-  // Conexão sem o pooler em modo transação: o driver envia consultas em paralelo na mesma conexão,
-  // o que o pooler de transação do Supabase (porta 6543) não suporta bem e fazia requisições travarem.
-  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  // Pooler do Supabase em modo transação (porta 6543): aguenta muitas instâncias do servidor ao mesmo tempo.
+  const url = process.env.POSTGRES_URL || process.env.DATABASE_URL;
   if (!url) {
     throw new Error("Defina POSTGRES_URL (ou DATABASE_URL) com a conexão do Postgres.");
   }
@@ -20,31 +20,31 @@ function connectionString() {
 }
 
 declare global {
-  var __pgClient: ReturnType<typeof postgres> | undefined;
+  var __pgPool: Pool | undefined;
 }
 
-function client() {
-  if (!globalThis.__pgClient) {
+function pool() {
+  if (!globalThis.__pgPool) {
     const url = connectionString();
     const isLocal = /localhost|127\.0\.0\.1/.test(url);
-    globalThis.__pgClient = postgres(url, {
-      // O pooler do Supabase (modo transação) não suporta prepared statements.
-      prepare: false,
+    const p = new Pool({
+      connectionString: url,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: isLocal ? 10 : 5,
+      idleTimeoutMillis: 5000,
+      connectionTimeoutMillis: 10000,
       // nenhuma consulta pode travar a requisição: falha rápido com erro claro
-      connection: isLocal ? {} : { statement_timeout: 15000, idle_in_transaction_session_timeout: 15000 },
-      // O pooler em modo sessão do Supabase aceita só 15 conexões no total, divididas entre todas as
-      // instâncias do servidor. Cada instância usa 1 conexão e a devolve logo que fica ociosa.
-      max: isLocal ? 10 : 1,
-      idle_timeout: isLocal ? 20 : 5,
-      max_lifetime: 60,
-      connect_timeout: 10,
-      ssl: isLocal ? false : "require",
+      query_timeout: 20000,
     });
+    p.on("error", (err) => console.error("[db] erro em conexão ociosa", err.message));
+    // devolve as conexões ociosas antes de a instância do servidor ser suspensa
+    if (!isLocal) attachDatabasePool(p);
+    globalThis.__pgPool = p;
   }
-  return globalThis.__pgClient;
+  return globalThis.__pgPool;
 }
 
-export const db = drizzle(client(), { schema, casing: "snake_case" });
+export const db = drizzle(pool(), { schema, casing: "snake_case" });
 export type DB = typeof db;
 export type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
 export { schema };
