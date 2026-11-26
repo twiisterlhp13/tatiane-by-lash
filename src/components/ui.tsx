@@ -81,10 +81,11 @@ export function Alert({ tone = "danger", children }: { tone?: Tone; children: Re
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3 lg:mb-6">
       <div>
-        <h1 className="font-display text-[28px] leading-tight sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
+        {/* no celular o título já aparece na barra superior */}
+        <h2 className="hidden font-display text-3xl leading-tight lg:block">{title}</h2>
+        {subtitle && <p className="text-sm text-muted lg:mt-1">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>

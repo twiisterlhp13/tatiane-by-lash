@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Lock, Plus, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Lock, Plus, RefreshCw } from "lucide-react";
+import { Fab } from "../nav";
 import { Button, Select, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { addDays, fmtLocalDateLong, fmtLocalDateShort, minutesToHHMM, utcToLocalParts, weekdayOf } from "@/lib/time";
@@ -40,7 +41,7 @@ export function AgendaClient(props: {
 }) {
   const router = useRouter();
   const { professionals, today } = props;
-  const [view, setView] = useState<View>("day");
+  const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(props.initialDate && /^\d{4}-\d{2}-\d{2}$/.test(props.initialDate) ? props.initialDate : today);
   const [prof, setProf] = useState<string>(professionals.length === 1 ? professionals[0].id : "all");
   const [items, setItems] = useState<AgendaItem[]>([]);
@@ -54,12 +55,6 @@ export function AgendaClient(props: {
     | { type: "blockInfo"; item: AgendaItem }
     | { type: "move"; item: AgendaItem; date: string; time: string; professionalId?: string }
   >(props.openNew ? { type: "new" } : props.openBlock ? { type: "block" } : null);
-
-  // Em telas largas, começa na semana
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza com o tamanho da tela no primeiro carregamento
-    if (window.matchMedia("(min-width: 1024px)").matches) setView("week");
-  }, []);
 
   const range = useMemo(() => {
     if (view === "day") return { from: date, to: date };
@@ -130,41 +125,33 @@ export function AgendaClient(props: {
 
   return (
     <div>
-      {/* Barra de ações */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" className="px-3" aria-label="Anterior" onClick={() => shift(-1)}><ChevronLeft size={18} /></Button>
-          <Button variant="secondary" className="px-4" onClick={() => setDate(today)}>Hoje</Button>
-          <Button variant="secondary" className="px-3" aria-label="Próximo" onClick={() => shift(1)}><ChevronRight size={18} /></Button>
-          <h1 className="ml-2 font-display text-xl sm:text-2xl">{title}</h1>
-          {loading && <RefreshCw size={15} className="animate-spin text-muted" aria-label="Atualizando" />}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setModal({ type: "block", date: view === "month" ? today : date })}>
-            <Lock size={16} /> Bloquear horário
-          </Button>
-          <Button onClick={() => setModal({ type: "new", date: view === "month" ? today : date })}><Plus size={18} /> Agendar</Button>
+      {/* Barra compacta: mês, visualização e filtro */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <label className="relative inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[15px] font-medium shadow-[var(--shadow-soft)] ring-1 ring-line">
+          {fmtLocalDateShort(date, { month: "long", year: "numeric" })}
+          <ChevronDown size={16} className="text-muted" />
+          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Ir para data"
+            className="absolute inset-0 cursor-pointer opacity-0" />
+        </label>
+        {loading && <RefreshCw size={15} className="animate-spin text-muted" aria-label="Atualizando" />}
+        <div className="ml-auto flex items-center gap-2">
+          {professionals.length > 1 && (
+            <Select value={prof} onChange={(e) => setProf(e.target.value)} className="w-auto min-h-9 max-w-40 rounded-full py-1 text-sm" aria-label="Profissional">
+              <option value="all">Todas</option>
+              {professionals.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+          )}
+          <div role="tablist" className="inline-flex rounded-full bg-white p-1 text-[13px] shadow-[var(--shadow-soft)] ring-1 ring-line">
+            {(["day", "week", "month"] as View[]).map((v) => (
+              <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
+                className={cx("rounded-full px-3 py-1", view === v ? "bg-berry text-white" : "text-ink-2")}>
+                {v === "day" ? "Dia" : v === "week" ? "Semana" : "Mês"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div role="tablist" className="inline-flex rounded-full border border-line-2 bg-white p-1 text-sm">
-          {(["day", "week", "month"] as View[]).map((v) => (
-            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
-              className={cx("rounded-full px-4 py-1.5", view === v ? "bg-berry text-white" : "text-ink-2")}>
-              {v === "day" ? "Dia" : v === "week" ? "Semana" : "Mês"}
-            </button>
-          ))}
-        </div>
-        {professionals.length > 1 && (
-          <Select value={prof} onChange={(e) => setProf(e.target.value)} className="w-auto min-h-10 rounded-full text-sm" aria-label="Profissional">
-            <option value="all">Todas as profissionais</option>
-            {professionals.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </Select>
-        )}
-        <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Ir para data"
-          className="min-h-10 rounded-full border border-line-2 bg-white px-3 text-sm" />
-      </div>
+      {view === "day" && <p className="mb-2 px-1 text-sm font-medium text-ink-2">{title}</p>}
 
       {error && <p className="mb-3 rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger">{error}</p>}
 
@@ -200,11 +187,19 @@ export function AgendaClient(props: {
         </div>
       )}
 
-      <Modal open={modal?.type === "slot"} onClose={() => setModal(null)} title={modal?.type === "slot" ? `${fmtLocalDateShort(modal.date)} às ${modal.time}` : ""}>
+      {/* Navegação flutuante ‹ HOJE › e botão + */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-30 flex items-center justify-start gap-3 pl-4 sm:justify-center sm:pl-0 lg:left-72">
+        <button aria-label="Anterior" onClick={() => shift(-1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-[#3a1828] text-white shadow-lg active:scale-95"><ChevronLeft size={22} /></button>
+        <button onClick={() => setDate(today)} className="pointer-events-auto rounded-full bg-white px-7 py-3 text-sm font-semibold tracking-wider text-ink shadow-lg ring-1 ring-line active:scale-95">HOJE</button>
+        <button aria-label="Próximo" onClick={() => shift(1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-[#3a1828] text-white shadow-lg active:scale-95"><ChevronRight size={22} /></button>
+      </div>
+      <Fab label="Agendar ou bloquear" onClick={() => setModal({ type: "slot", date: view === "month" ? today : date, time: "" })} />
+
+      <Modal open={modal?.type === "slot"} onClose={() => setModal(null)} title={modal?.type === "slot" ? (modal.time ? `${fmtLocalDateShort(modal.date)} às ${modal.time}` : "O que você quer fazer?") : ""}>
         {modal?.type === "slot" && (
           <div className="grid gap-3">
             <Button onClick={() => setModal({ ...modal, type: "new" })}><Plus size={18} /> Novo agendamento</Button>
-            <Button variant="secondary" onClick={() => setModal({ ...modal, type: "block" })}><Lock size={16} /> Bloquear a partir deste horário</Button>
+            <Button variant="secondary" onClick={() => setModal({ ...modal, type: "block" })}><Lock size={16} /> {modal.time ? "Bloquear a partir deste horário" : "Bloquear horário"}</Button>
           </div>
         )}
       </Modal>
@@ -214,7 +209,7 @@ export function AgendaClient(props: {
           <AppointmentForm
             professionals={professionals}
             services={props.services}
-            defaults={{ date: modal.date ?? date, time: modal.time, professionalId: modal.professionalId ?? (prof !== "all" ? prof : props.ownProfessionalId ?? professionals[0]?.id) }}
+            defaults={{ date: modal.date ?? date, time: modal.time || undefined, professionalId: modal.professionalId ?? (prof !== "all" ? prof : props.ownProfessionalId ?? professionals[0]?.id) }}
             onDone={afterChange}
           />
         )}
@@ -225,7 +220,7 @@ export function AgendaClient(props: {
           <BlockForm
             professionals={professionals}
             canBlockAll={props.canManageAll}
-            defaults={{ date: modal.date ?? date, time: modal.time, professionalId: modal.professionalId ?? (prof !== "all" ? prof : props.ownProfessionalId ?? professionals[0]?.id) }}
+            defaults={{ date: modal.date ?? date, time: modal.time || undefined, professionalId: modal.professionalId ?? (prof !== "all" ? prof : props.ownProfessionalId ?? professionals[0]?.id) }}
             onDone={afterChange}
           />
         )}
@@ -307,24 +302,28 @@ function TimeGrid(props: {
     return Math.max(startMin, Math.min(m, endHour * 60 - 15));
   }
 
-  const many = columns.length > 3;
+  // várias profissionais no mesmo dia: rola de lado; a semana cabe inteira na tela
+  const many = columns.length > 3 && columns.length !== 7;
+  const compact = columns.length === 7;
   return (
     <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-white shadow-[var(--shadow-soft)]">
       <div className="scroll-thin overflow-x-auto">
-        <div style={{ minWidth: many ? columns.length * 120 + 56 : undefined }}>
-          <div className="sticky top-0 z-10 grid border-b border-line bg-white" style={{ gridTemplateColumns: `56px repeat(${columns.length}, minmax(0,1fr))` }}>
+        <div style={{ minWidth: many ? columns.length * 120 + 44 : undefined }}>
+          <div className="sticky top-0 z-10 grid border-b border-line bg-white" style={{ gridTemplateColumns: `${compact ? 40 : 52}px repeat(${columns.length}, minmax(0,1fr))` }}>
             <div />
             {columns.map((c) => (
-              <div key={c.key} className={cx("border-l border-line px-2 py-2 text-center text-sm", c.date === props.today && columns.length === 7 && "bg-berry-soft/60")}>
-                <span className="block truncate font-medium">{c.label}</span>
-                {c.sub && <span className={cx("font-display text-lg", c.date === props.today && "text-berry")}>{c.sub}</span>}
+              <div key={c.key} className={cx("border-l border-line py-1.5 text-center", compact ? "px-0" : "px-2")}>
+                <span className={cx("block truncate text-muted", compact ? "text-[11px]" : "text-sm font-medium text-ink")}>{c.label.replace(".", "")}</span>
+                {c.sub && (
+                  <span className={cx("mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm tnum", c.date === props.today ? "bg-berry font-semibold text-white" : "text-ink")}>{Number(c.sub)}</span>
+                )}
               </div>
             ))}
           </div>
-          <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${columns.length}, minmax(0,1fr))`, height }}>
+          <div className="relative grid" style={{ gridTemplateColumns: `${compact ? 40 : 52}px repeat(${columns.length}, minmax(0,1fr))`, height }}>
             <div className="relative">
               {hours.map((h) => (
-                <span key={h} className={cx("absolute right-2 text-[11px] text-muted tnum", h === startHour ? "translate-y-0.5" : "-translate-y-2")} style={{ top: (h * 60 - startMin) * PX_PER_MIN }}>
+                <span key={h} className={cx("absolute right-1.5 text-muted tnum", compact ? "text-[10px]" : "text-[11px]", h === startHour ? "translate-y-0.5" : "-translate-y-2")} style={{ top: (h * 60 - startMin) * PX_PER_MIN }}>
                   {String(h).padStart(2, "0")}:00
                 </span>
               ))}
@@ -363,9 +362,9 @@ function TimeGrid(props: {
                     if (it.kind === "block") {
                       return (
                         <button key={`${it.id}-${it.date}-${it.startMin}`} onClick={() => props.onOpen(it)}
-                          className="absolute z-[2] overflow-hidden rounded-lg border border-line-2 px-2 py-1 text-left text-[11px] text-ink-2"
+                          className={cx("absolute z-[2] overflow-hidden border border-line-2 text-left text-[11px] text-ink-2", compact ? "rounded-[5px] px-[3px] py-0.5" : "rounded-lg px-2 py-1")}
                           style={{ top, height: h, width, left, background: "repeating-linear-gradient(135deg,#f4ece7,#f4ece7 6px,#ece1db 6px,#ece1db 12px)" }}>
-                          <span className="flex items-center gap-1 font-medium"><Lock size={11} /> {it.title || BLOCK_LABEL[it.blockKind ?? "other"]}</span>
+                          <span className={cx("flex items-center gap-1 font-medium", compact && "text-[9px]")}>{!compact && <Lock size={11} />} {it.title || BLOCK_LABEL[it.blockKind ?? "other"]}</span>
                         </button>
                       );
                     }
@@ -379,13 +378,28 @@ function TimeGrid(props: {
                         onDragStart={(e) => { dragItem.current = it; e.dataTransfer.effectAllowed = "move"; }}
                         onDragEnd={() => { setTimeout(() => (dragItem.current = null), 0); }}
                         onClick={() => props.onOpen(it)}
-                        className={cx("absolute z-[3] overflow-hidden rounded-lg px-2 py-1 text-left text-[12px] leading-tight shadow-sm", done && "opacity-60")}
-                        style={{ top, height: h, width, left, background: pending ? "#fff" : `${color}1f`, borderLeft: `3px solid ${color}`, border: pending ? `1.5px dashed ${color}` : undefined }}
-                        title={`${it.client} · ${it.service}`}
+                        className={cx(
+                          "absolute z-[3] overflow-hidden text-left leading-tight shadow-sm",
+                          compact ? "rounded-[5px] px-[3px] py-0.5 text-[10px]" : "rounded-lg px-2 py-1 text-[12px]",
+                          done && "opacity-55",
+                        )}
+                        style={{
+                          top, height: h, width, left,
+                          background: pending ? "#fff" : color,
+                          color: pending ? color : "#fff",
+                          border: pending ? `1.5px dashed ${color}` : undefined,
+                        }}
+                        title={`${minutesToHHMM(it.startMin)} ${it.client} · ${it.service}`}
                       >
-                        <span className="block font-semibold text-ink truncate">{minutesToHHMM(it.startMin)} {it.client}</span>
-                        {h > 34 && <span className="block truncate text-ink-2">{it.service}</span>}
-                        {pending && h > 50 && <span className="block text-[10px] font-medium text-warn">aguardando</span>}
+                        {compact ? (
+                          <span className="block break-words font-medium [overflow-wrap:anywhere]">{it.client}</span>
+                        ) : (
+                          <>
+                            <span className="block truncate font-semibold">{minutesToHHMM(it.startMin)} {it.client}</span>
+                            {h > 34 && <span className="block truncate opacity-90">{it.service}</span>}
+                            {pending && h > 50 && <span className="block text-[10px] font-medium">aguardando confirmação</span>}
+                          </>
+                        )}
                       </button>
                     );
                   })}
@@ -395,7 +409,7 @@ function TimeGrid(props: {
           </div>
         </div>
       </div>
-      <p className="border-t border-line px-4 py-2 text-xs text-muted">Toque em um horário vazio para agendar ou bloquear. No computador, arraste um agendamento para movê-lo.</p>
+      <p className="border-t border-line px-4 py-2 pb-20 text-xs text-muted lg:pb-2">Toque em um horário vazio para agendar ou bloquear. No computador, arraste um agendamento para movê-lo.</p>
     </div>
   );
 }

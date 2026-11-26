@@ -1,74 +1,84 @@
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db";
-import { requirePermission } from "@/lib/auth";
-import { orgSettings } from "@/lib/booking";
-import { appUrl } from "@/lib/notify";
-import { Card, Checkbox, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
-import { SettingsForm } from "./forms";
-import { saveBookingSettingsAction, saveProfileAction } from "./actions";
+import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import {
+  Ban, BellRing, Building2, CalendarCog, ChevronRight, Clock, History, KeyRound, MessageSquareText, Smartphone, Sparkles, Users,
+} from "lucide-react";
+import { requireCtx } from "@/lib/auth";
+import type { Permission } from "@/lib/permissions";
 
 export const metadata = { title: "Configurações" };
 
-export default async function SettingsPage() {
-  const ctx = await requirePermission("settings.manage");
-  const [org] = await db.select().from(schema.organizations).where(eq(schema.organizations.id, ctx.org.id));
-  const s = orgSettings(org);
+type Entry = { href: string; label: string; hint?: string; icon: LucideIcon; perm?: Permission };
+const GROUPS: { title: string; items: Entry[] }[] = [
+  {
+    title: "Configurações da agenda",
+    items: [
+      { href: "/painel/horarios", label: "Horário de atendimento", hint: "Dias, horários e pausas", icon: Clock },
+      { href: "/painel/configuracoes/agendamento", label: "Agenda do cliente", hint: "Agendamento online, antecedência e cancelamento", icon: CalendarCog, perm: "settings.manage" },
+      { href: "/painel/notificacoes", label: "Mensagens automáticas", hint: "Confirmações e lembretes", icon: MessageSquareText, perm: "settings.manage" },
+      { href: "/painel/agenda?bloquear=1", label: "Bloquear horários", hint: "Folgas, férias e compromissos", icon: Ban },
+    ],
+  },
+  {
+    title: "Cadastros",
+    items: [
+      { href: "/painel/equipe", label: "Profissionais", hint: "Equipe e acessos ao painel", icon: Users, perm: "team.manage" },
+      { href: "/painel/servicos", label: "Serviços", hint: "Duração, preço e quem atende", icon: Sparkles, perm: "services.manage" },
+    ],
+  },
+  {
+    title: "Empresa e site",
+    items: [
+      { href: "/painel/configuracoes/empresa", label: "Perfil da empresa", hint: "Nome, link, endereço, contato e fotos", icon: Building2, perm: "settings.manage" },
+    ],
+  },
+  {
+    title: "Segurança",
+    items: [
+      { href: "/recuperar-senha", label: "Alterar senha", hint: "Enviamos um link para o seu e-mail", icon: KeyRound },
+      { href: "/painel/auditoria", label: "Histórico de ações", hint: "Quem fez o quê no painel", icon: History, perm: "audit.view" },
+    ],
+  },
+];
+
+export default async function SettingsHub() {
+  const ctx = await requireCtx();
   return (
-    <div className="mx-auto max-w-3xl">
-      <PageHeader title="Configurações" subtitle="Dados do negócio, página pública e regras de agendamento." />
-
-      <Card className="mb-6 p-5 sm:p-7">
-        <h2 className="mb-1 font-display text-xl">Negócio e página pública</h2>
-        <p className="mb-5 text-sm text-muted">Essas informações aparecem para as clientes em {appUrl()}/{org.slug}</p>
-        <SettingsForm action={saveProfileAction}>
-          <Field label="Nome do negócio"><Input name="name" defaultValue={org.name} required /></Field>
-          <Field label="Link da página" hint={`${appUrl()}/seu-link · use letras, números e hífen.`}>
-            <Input name="slug" defaultValue={org.slug} required pattern="[a-zA-Z0-9\-]{3,48}" />
-          </Field>
-          <Field label="Descrição" hint="Conte em poucas linhas sobre o seu trabalho.">
-            <Textarea name="description" rows={3} defaultValue={org.description} />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Telefone"><Input name="phone" type="tel" defaultValue={org.phone} /></Field>
-            <Field label="WhatsApp" hint="Botão de contato na página."><Input name="whatsapp" type="tel" defaultValue={org.whatsapp} /></Field>
-            <Field label="E-mail de contato"><Input name="email" type="email" defaultValue={org.email} /></Field>
-            <Field label="Instagram"><Input name="instagram" defaultValue={org.instagram} placeholder="@seuperfil" /></Field>
-          </div>
-          <Field label="Endereço"><Input name="address" defaultValue={org.address} /></Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Logo (link da imagem)" hint="Opcional. Quadrada, de preferência."><Input name="logoUrl" type="url" defaultValue={org.logoUrl ?? ""} /></Field>
-            <Field label="Imagem de capa (link)" hint="Opcional."><Input name="coverUrl" type="url" defaultValue={org.coverUrl ?? ""} /></Field>
-          </div>
-        </SettingsForm>
-      </Card>
-
-      <Card className="p-5 sm:p-7">
-        <h2 className="mb-5 font-display text-xl">Agendamento online e políticas</h2>
-        <SettingsForm action={saveBookingSettingsAction}>
-          <div className="rounded-xl bg-berry-soft/60 p-4">
-            <Checkbox name="onlineBookingEnabled" defaultChecked={org.onlineBookingEnabled} label={<><strong>Agendamento online ativo.</strong> Desligado, a página mostra seus serviços e contato, mas só você cria agendamentos (agenda interna).</>} />
-          </div>
-          <Checkbox name="autoConfirmOnline" defaultChecked={s.autoConfirmOnline} label="Confirmar automaticamente os agendamentos feitos pelo site (desmarque para aprovar um por um)" />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Horários a cada">
-              <Select name="slotIntervalMinutes" defaultValue={String(s.slotIntervalMinutes)}>
-                {[10, 15, 20, 30, 45, 60, 90, 120].map((n) => <option key={n} value={n}>{n} min</option>)}
-              </Select>
-            </Field>
-            <Field label="Antecedência mínima" hint="Em horas."><Input name="minAdvanceHours" type="number" min={0} max={720} defaultValue={Math.round(s.minAdvanceMinutes / 60)} /></Field>
-            <Field label="Agenda aberta por" hint="Dias à frente."><Input name="maxAdvanceDays" type="number" min={1} max={365} defaultValue={s.maxAdvanceDays} /></Field>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Cliente pode cancelar até" hint="Horas antes. 0 = só pelo WhatsApp."><Input name="cancelUntilHours" type="number" min={0} max={720} defaultValue={s.cancelUntilHours} /></Field>
-            <Field label="Cliente pode reagendar até" hint="Horas antes. 0 = só pelo WhatsApp."><Input name="rescheduleUntilHours" type="number" min={0} max={720} defaultValue={s.rescheduleUntilHours} /></Field>
-          </div>
-          <Checkbox name="requireCancelReason" defaultChecked={s.requireCancelReason} label="Pedir o motivo quando a cliente cancelar" />
-          <Checkbox name="requireEmail" defaultChecked={s.requireEmail} label="Exigir e-mail no agendamento online (sem e-mail a cliente não recebe confirmação nem lembrete)" />
-          <Field label="Texto da política" hint="Mostrado antes da confirmação e no link do agendamento.">
-            <Textarea name="policyText" rows={4} defaultValue={s.policyText} />
-          </Field>
-        </SettingsForm>
-      </Card>
+    <div className="mx-auto max-w-2xl space-y-4">
+      {GROUPS.map((g) => {
+        const items = g.items.filter((i) => !i.perm || ctx.can(i.perm));
+        if (items.length === 0) return null;
+        return (
+          <section key={g.title} className="overflow-hidden rounded-2xl border border-line bg-white shadow-[var(--shadow-soft)]">
+            <h2 className="px-4 pb-1 pt-3 text-xs font-medium text-muted">{g.title}</h2>
+            <ul>
+              {items.map((i) => (
+                <li key={i.href}>
+                  <Link href={i.href} className="flex items-center gap-4 px-4 py-3.5 hover:bg-paper-2/60">
+                    <i.icon size={21} strokeWidth={1.8} className="shrink-0 text-ink-2" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px]">{i.label}</span>
+                      {i.hint && <span className="block truncate text-xs text-muted">{i.hint}</span>}
+                    </span>
+                    <ChevronRight size={18} className="text-line-2" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[var(--shadow-soft)]">
+        <h2 className="px-4 pb-1 pt-3 text-xs font-medium text-muted">Dispositivo</h2>
+        <div className="flex items-center gap-4 px-4 py-3.5">
+          <Smartphone size={21} strokeWidth={1.8} className="text-ink-2" />
+          <span className="text-sm text-ink-2">Para usar como app no Android: no Chrome, toque em ⋮ → <strong>Instalar app</strong>.</span>
+        </div>
+        <div className="flex items-center gap-4 px-4 pb-4 pt-1">
+          <BellRing size={21} strokeWidth={1.8} className="text-ink-2" />
+          <span className="text-sm text-ink-2">A agenda se atualiza sozinha a cada 20 segundos enquanto estiver aberta.</span>
+        </div>
+      </section>
     </div>
   );
 }
