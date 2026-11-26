@@ -47,7 +47,8 @@ export async function availableSlug(base: string, q: typeof db | Tx = db) {
   for (let i = 0; i < 50; i++) {
     const candidate = i === 0 ? root : `${root}-${i + 1}`;
     const [hit] = await q.select({ id: schema.organizations.id }).from(schema.organizations).where(eq(schema.organizations.slug, candidate)).limit(1);
-    if (!hit) return candidate;
+    const [alias] = await q.select({ s: schema.organizationSlugAliases.slug }).from(schema.organizationSlugAliases).where(eq(schema.organizationSlugAliases.slug, candidate)).limit(1);
+    if (!hit && !alias) return candidate;
   }
   return `${root}-${Date.now().toString(36)}`;
 }

@@ -35,13 +35,19 @@ export async function saveProfileAction(_: FormState, form: FormData): Promise<F
   const [taken] = await db.select({ id: schema.organizations.id }).from(schema.organizations)
     .where(and(eq(schema.organizations.slug, slug), ne(schema.organizations.id, ctx.org.id))).limit(1);
   if (taken) return { error: "Este link já está em uso por outro negócio." };
+  const [aliasTaken] = await db.select().from(schema.organizationSlugAliases).where(eq(schema.organizationSlugAliases.slug, slug)).limit(1);
+  if (aliasTaken && aliasTaken.organizationId !== ctx.org.id) return { error: "Este link já está em uso por outro negócio." };
+  if (slug !== ctx.org.slug) {
+    await db.delete(schema.organizationSlugAliases).where(eq(schema.organizationSlugAliases.slug, slug));
+    await db.insert(schema.organizationSlugAliases).values({ slug: ctx.org.slug, organizationId: ctx.org.id }).onConflictDoNothing();
+  }
   await db.update(schema.organizations).set({
     ...s.data, slug, logoUrl: s.data.logoUrl || null, coverUrl: s.data.coverUrl || null,
     instagram: s.data.instagram.replace(/^@/, ""), updatedAt: new Date(),
   }).where(eq(schema.organizations.id, ctx.org.id));
   await audit({ organizationId: ctx.org.id, userId: ctx.user.id, actorLabel: ctx.user.name, action: "organization.profile_updated", entity: "organization", entityId: ctx.org.id, data: { slug } });
   revalidatePath("/", "layout");
-  return { ok: slug !== ctx.org.slug ? "Salvo. Atenção: seu link público mudou, atualize onde você divulgou." : "Dados salvos." };
+  return { ok: slug !== ctx.org.slug ? "Salvo. Seu link mudou; o endereço antigo continua levando para o novo." : "Dados salvos." };
 }
 
 export async function saveBookingSettingsAction(_: FormState, form: FormData): Promise<FormState> {

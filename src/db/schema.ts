@@ -115,6 +115,13 @@ export const organizations = pgTable("organizations", {
   updatedAt: updatedAt(),
 });
 
+/** Links antigos de uma empresa: continuam levando para o link atual depois de uma troca. */
+export const organizationSlugAliases = pgTable("organization_slug_aliases", {
+  slug: text("slug").primaryKey(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+});
+
 export const locations = pgTable("locations", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),

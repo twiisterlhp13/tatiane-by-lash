@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import { canClientChange } from "@/lib/availability";
 import { getAppointmentByToken, getOrgBySlug, orgSettings } from "@/lib/booking";
@@ -16,6 +16,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   const { t = "" } = await searchParams;
   const org = await getOrgBySlug(slug);
   if (!org) notFound();
+  if (org.slug !== slug) redirect(`/${org.slug}/agendamento/${code}${t ? `?t=${t}` : ""}`);
   const row = t ? await getAppointmentByToken(org.id, code, t) : null;
   const contact = org.whatsapp || org.phone;
 

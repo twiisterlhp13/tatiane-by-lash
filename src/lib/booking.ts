@@ -42,8 +42,17 @@ export function orgSettings(org: Pick<OrgRow, "settings">): OrgSettings {
 }
 
 export async function getOrgBySlug(slug: string) {
-  const [org] = await db.select().from(schema.organizations).where(eq(schema.organizations.slug, slug)).limit(1);
-  return org ?? null;
+  const s = slug.toLowerCase();
+  const [org] = await db.select().from(schema.organizations).where(eq(schema.organizations.slug, s)).limit(1);
+  if (org) return org;
+  // link antigo (a empresa trocou o endereço): segue funcionando
+  const [alias] = await db
+    .select({ org: schema.organizations })
+    .from(schema.organizationSlugAliases)
+    .innerJoin(schema.organizations, eq(schema.organizations.id, schema.organizationSlugAliases.organizationId))
+    .where(eq(schema.organizationSlugAliases.slug, s))
+    .limit(1);
+  return alias?.org ?? null;
 }
 
 /* ------------------------------------------------------------------ */

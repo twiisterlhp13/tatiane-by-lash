@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { and, asc, eq } from "drizzle-orm";
 import { AtSign, MapPin, MessageCircle, Phone } from "lucide-react";
 import { db, schema } from "@/db";
@@ -28,6 +28,7 @@ export default async function PublicPage({ params }: Props) {
   const { slug } = await params;
   const org = await getOrgBySlug(slug.toLowerCase());
   if (!org) notFound();
+  if (org.slug !== slug) permanentRedirect(`/${org.slug}`);
   const settings = orgSettings(org);
   const [services, pros, links, hours] = await Promise.all([
     db.select().from(schema.services)

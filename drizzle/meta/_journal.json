@@ -15,6 +15,20 @@
       "when": 1795642557675,
       "tag": "0001_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795652105336,
+      "tag": "0002_slug_aliases",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795652106059,
+      "tag": "0003_fix_tatiane_name",
+      "breakpoints": true
     }
   ]
 }
