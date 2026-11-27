@@ -7,6 +7,7 @@ import { db, schema } from "@/db";
 import { clientIp, createSession, destroySession, getSessionUser, hashPassword, verifyPassword } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { createOrganization } from "@/lib/org-setup";
+import { hhmmToMinutes } from "@/lib/time";
 import { randomToken, sha256 } from "@/lib/security";
 import { appUrl } from "@/lib/notify";
 
@@ -173,4 +174,76 @@ export async function resetPasswordAction(_: FormState, form: FormData): Promise
   await db.delete(schema.sessions).where(eq(schema.sessions.userId, reset.userId));
   await audit({ organizationId: null, userId: reset.userId, action: "user.password_reset", entity: "user", entityId: reset.userId, ip: await clientIp() });
   redirect("/entrar?senha=ok");
+}
+
+/* ------------------------------------------------------------------ */
+/* Cadastro em 4 passos (lash designer)                                */
+/* ------------------------------------------------------------------ */
+
+const onbSchema = z.object({
+  nome: z.string().trim().min(2, "Informe seu nome profissional.").max(80),
+  local: z.string().trim().min(2, "Informe seu bairro e cidade.").max(120),
+  email: z.email("Informe um e-mail válido.").trim().toLowerCase(),
+  senha: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres.").max(200),
+  termos: z.literal(true, { error: "É preciso aceitar os termos e a política de privacidade." }),
+  especialidades: z.array(z.string().trim().min(1).max(40)).max(20),
+  servicos: z
+    .array(z.object({ nome: z.string().trim().min(2).max(120), preco: z.number().min(0).max(100000), minutos: z.number().int().min(5).max(720) }))
+    .min(1, "Cadastre pelo menos um procedimento com nome, valor e duração.")
+    .max(30),
+  dias: z.array(z.number().int().min(0).max(6)).min(1, "Escolha pelo menos um dia de atendimento."),
+  ini: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido."),
+  fim: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido."),
+});
+
+export type OnbResult = { ok: false; error: string; passo: number } | undefined;
+
+export async function onboardingAction(input: z.input<typeof onbSchema>): Promise<OnbResult> {
+  try {
+    return await onboardingInner(input);
+  } catch (e) {
+    if (isRedirect(e)) throw e;
+    console.error("[cadastro] falhou", e);
+    return { ok: false, error: "Não foi possível criar sua conta agora. Tente de novo em instantes.", passo: 4 };
+  }
+}
+
+async function onboardingInner(input: z.input<typeof onbSchema>): Promise<OnbResult> {
+  const p = onbSchema.safeParse(input);
+  if (!p.success) {
+    const campo = String(p.error.issues[0].path[0] ?? "");
+    const passo = ["nome", "local", "email", "senha", "termos"].includes(campo) ? 1 : campo === "especialidades" ? 2 : campo === "servicos" ? 3 : 4;
+    return { ok: false, error: p.error.issues[0].message, passo };
+  }
+  const d = p.data;
+  const ini = hhmmToMinutes(d.ini)!;
+  const fim = hhmmToMinutes(d.fim)!;
+  if (fim <= ini) return { ok: false, error: "O fim do expediente precisa ser depois do início.", passo: 4 };
+  const [exists] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, d.email)).limit(1);
+  if (exists) return { ok: false, error: "Este e-mail já tem conta. Use “Entrar”.", passo: 1 };
+
+  const [user] = await db.insert(schema.users).values({
+    name: d.nome, email: d.email, passwordHash: await hashPassword(d.senha), termsAcceptedAt: new Date(),
+  }).returning();
+  const org = await createOrganization({
+    ownerUserId: user.id, ownerName: d.nome, ownerEmail: d.email, name: d.nome, segment: "lash", phone: "", address: "", withSuggestedServices: false,
+  });
+  const [prof] = await db.select({ id: schema.professionals.id }).from(schema.professionals).where(eq(schema.professionals.organizationId, org.id)).limit(1);
+  await db.transaction(async (tx) => {
+    await tx.update(schema.organizations).set({ area: d.local, specialties: d.especialidades, updatedAt: new Date() }).where(eq(schema.organizations.id, org.id));
+    const rows = d.dias.map((weekday) => ({ weekday, startMinute: ini, endMinute: fim }));
+    await tx.delete(schema.professionalHours).where(eq(schema.professionalHours.organizationId, org.id));
+    await tx.delete(schema.businessHours).where(eq(schema.businessHours.organizationId, org.id));
+    await tx.insert(schema.professionalHours).values(rows.map((r) => ({ ...r, organizationId: org.id, professionalId: prof.id })));
+    await tx.insert(schema.businessHours).values(rows.map((r) => ({ ...r, organizationId: org.id })));
+    const created = await tx.insert(schema.services).values(
+      d.servicos.map((s, i) => ({
+        organizationId: org.id, name: s.nome, durationMinutes: s.minutos, bufferMinutes: 10, priceCents: Math.round(s.preco * 100), sortOrder: i,
+      })),
+    ).returning({ id: schema.services.id });
+    await tx.insert(schema.professionalServices).values(created.map((s) => ({ organizationId: org.id, professionalId: prof.id, serviceId: s.id })));
+  });
+  await audit({ organizationId: org.id, userId: user.id, actorLabel: d.nome, action: "user.signup", entity: "user", entityId: user.id, ip: await clientIp() });
+  await createSession(user.id, org.id);
+  redirect("/painel?bem-vinda=1");
 }

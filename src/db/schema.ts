@@ -77,7 +77,7 @@ export const defaultOrgSettings: OrgSettings = {
   cancelUntilHours: 24,
   rescheduleUntilHours: 24,
   requireCancelReason: false,
-  autoConfirmOnline: true,
+  autoConfirmOnline: false,
   requireEmail: false,
   policyText:
     "Cancelamentos e reagendamentos podem ser feitos pelo link do seu agendamento até 24 horas antes do horário marcado. Em caso de atraso superior a 15 minutos, o atendimento poderá ser reduzido ou remarcado.",
@@ -106,6 +106,10 @@ export const organizations = pgTable("organizations", {
   email: text("email").notNull().default(""),
   instagram: text("instagram").notNull().default(""),
   address: text("address").notNull().default(""),
+  /** Bairro e cidade mostrados na vitrine (o endereço exato nunca aparece no perfil público). */
+  area: text("area").notNull().default(""),
+  /** Especialidades exibidas na vitrine (ex.: Fio a fio, Volume russo, Design de sobrancelhas). */
+  specialties: jsonb("specialties").$type<string[]>().notNull().default([]),
   timezone: text("timezone").notNull().default("America/Sao_Paulo"),
   currency: text("currency").notNull().default("BRL"),
   onlineBookingEnabled: boolean("online_booking_enabled").notNull().default(true),
@@ -415,6 +419,53 @@ export const auditLogs = pgTable("audit_logs", {
   ip: text("ip").notNull().default(""),
   createdAt: createdAt(),
 }, (t) => [index("audit_org_idx").on(t.organizationId, t.createdAt)]);
+
+/* ------------------------------------------------------------------ */
+/* Negócio: despesas, estoque, portfólio e perguntas à IA              */
+/* ------------------------------------------------------------------ */
+
+export const expenses = pgTable("expenses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  category: text("category").notNull().default("outros"), // insumos | aluguel | marketing | impostos | outros
+  amountCents: integer("amount_cents").notNull(),
+  spentOn: date("spent_on").notNull(),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+}, (t) => [index("expenses_org_date_idx").on(t.organizationId, t.spentOn)]);
+
+export const inventoryItems = pgTable("inventory_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  unit: text("unit").notNull().default("un"),
+  quantity: integer("quantity").notNull().default(0),
+  minimum: integer("minimum").notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [index("inventory_org_idx").on(t.organizationId)]);
+
+/** Fotos do portfólio (JPEG reduzido no aparelho, guardado em base64). */
+export const portfolioPhotos = pgTable("portfolio_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  imageData: text("image_data").notNull(),
+  caption: text("caption").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: createdAt(),
+}, (t) => [index("portfolio_org_idx").on(t.organizationId, t.sortOrder)]);
+
+/** Perguntas feitas à IA (limite mensal por negócio). */
+export const aiQuestions = pgTable("ai_questions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  question: text("question").notNull(),
+  answer: text("answer").notNull().default(""),
+  source: text("source").notNull().default("local"), // ia | local
+  createdAt: createdAt(),
+}, (t) => [index("ai_questions_org_idx").on(t.organizationId, t.createdAt)]);
 
 /* ------------------------------------------------------------------ */
 /* Módulos preparados (fase 2) — modelo de dados pronto, telas atrás  */

@@ -29,6 +29,13 @@
       "when": 1795652106059,
       "tag": "0003_fix_tatiane_name",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795821088721,
+      "tag": "0004_negocio_vitrine_ia",
+      "breakpoints": true
     }
   ]
 }

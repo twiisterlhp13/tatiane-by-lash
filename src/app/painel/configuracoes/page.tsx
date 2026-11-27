@@ -16,7 +16,7 @@ const GROUPS: { title: string; items: Entry[] }[] = [
       { href: "/painel/horarios", label: "Horário de atendimento", hint: "Dias, horários e pausas", icon: Clock },
       { href: "/painel/configuracoes/agendamento", label: "Agenda do cliente", hint: "Agendamento online, antecedência e cancelamento", icon: CalendarCog, perm: "settings.manage" },
       { href: "/painel/notificacoes", label: "Mensagens automáticas", hint: "Confirmações e lembretes", icon: MessageSquareText, perm: "settings.manage" },
-      { href: "/painel/agenda?bloquear=1", label: "Bloquear horários", hint: "Folgas, férias e compromissos", icon: Ban },
+      { href: "/painel/agenda/semana?bloquear=1", label: "Bloquear horários", hint: "Folgas, férias e compromissos", icon: Ban },
     ],
   },
   {

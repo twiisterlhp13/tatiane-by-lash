@@ -5,6 +5,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: false,
   poweredByHeader: false,
+  // fotos do portfólio e do perfil chegam como JPEG reduzido no aparelho (até ~900 KB)
+  experimental: {
+    serverActions: { bodySizeLimit: "2mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

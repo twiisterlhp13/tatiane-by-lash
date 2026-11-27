@@ -1,30 +1,46 @@
 @import "tailwindcss";
 
+/*
+  TATIANE By Lash — sistema visual
+  Porcelana (fundo), gel (rosa dos patches de gel), rímel (preto das ações e da marca),
+  grafite (texto de leitura). Montserrat em tudo.
+  Os nomes antigos (berry, paper, ink…) continuam existindo para as telas de configuração.
+*/
 @theme {
-  --color-paper: #fbf7f4;
-  --color-paper-2: #f4ece7;
+  --color-paper: #faf7f7;
+  --color-paper-2: #f3eced;
   --color-card: #ffffff;
-  --color-ink: #2b1d24;
-  --color-ink-2: #5c4a53;
-  --color-muted: #8a7880;
-  --color-line: #e8dcd6;
-  --color-line-2: #d9c8c1;
-  --color-berry: #8a3d5c;
-  --color-berry-2: #6f2f49;
-  --color-berry-soft: #f5e6ec;
-  --color-gold: #b08a4e;
+  --color-ink: #1c1719;
+  --color-ink-2: #4d4447;
+  --color-muted: #85797c;
+  --color-line: #ede4e6;
+  --color-line-2: #ddd1d4;
+
+  --color-rimel: #000000;
+  --color-rimel-2: #2b2528;
+  --color-gel: #f7d9df;
+  --color-gel-2: #efc2cc;
+  --color-gel-ink: #6e2b3e;
+  --color-framboesa: #b8305a;
+
+  /* compatibilidade com as telas antigas */
+  --color-berry: #000000;
+  --color-berry-2: #2b2528;
+  --color-berry-soft: #f7d9df;
+  --color-gold: #a8875b;
+
   --color-ok: #2f7a55;
-  --color-ok-soft: #e4f2ea;
+  --color-ok-soft: #e3f1ea;
   --color-warn: #a86414;
   --color-warn-soft: #fbefdc;
   --color-danger: #b3373f;
   --color-danger-soft: #fbe6e7;
 
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Montserrat Variable", Montserrat, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Montserrat Variable", Montserrat, ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 18px;
-  --shadow-soft: 0 1px 2px rgb(43 29 36 / 0.04), 0 4px 16px rgb(43 29 36 / 0.05);
+  --radius-card: 20px;
+  --shadow-soft: 0 1px 0 rgb(28 23 25 / 0.03);
 }
 
 html {
@@ -36,12 +52,21 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-feature-settings: "tnum" 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.02em;
 }
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .tnum {
@@ -49,22 +74,127 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-berry);
+  outline: 2px solid var(--color-rimel);
   outline-offset: 2px;
 }
 
-/* inputs nativos coerentes */
 input[type="date"],
-input[type="time"] {
-  min-height: 44px;
+input[type="time"],
+input[type="datetime-local"] {
+  min-height: 48px;
 }
 
 dialog::backdrop {
-  background: rgb(43 29 36 / 0.45);
+  background: rgb(28 23 25 / 0.45);
 }
 
 dialog {
   max-height: calc(100dvh - 24px);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Folha inferior (bottom sheet)                                        */
+/* ------------------------------------------------------------------ */
+dialog.sheet {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 600px;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 28px 28px 0 0;
+  background: var(--color-card);
+  color: var(--color-ink);
+  overflow: hidden;
+}
+dialog.sheet[open] {
+  animation: sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Abertura: cílios desenhados fio a fio                                */
+/* ------------------------------------------------------------------ */
+.fio-a-fio path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: fio 0.5s ease-out forwards;
+}
+.fio-a-fio path.palpebra {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: fio 1s ease-out forwards;
+}
+@keyframes fio {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.surge {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: surge 0.7s ease-out forwards;
+}
+@keyframes surge {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  max-width: 90vw;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: var(--color-rimel);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+  text-align: center;
+  width: max-content;
+  animation: toast-in 0.25s ease-out forwards;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.toast.erro {
+  background: var(--color-danger);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -72,8 +202,17 @@ dialog {
     animation: none !important;
     transition: none !important;
   }
+  .fio-a-fio path,
+  .fio-a-fio path.palpebra {
+    stroke-dashoffset: 0;
+  }
+  .surge {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-.scroll-thin {
-  scrollbar-width: thin;
+/* primeira visita: a tela de escolha só aparece depois da abertura */
+.primeira-visita .landing {
+  visibility: hidden;
 }

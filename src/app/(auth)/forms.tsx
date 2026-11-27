@@ -21,7 +21,7 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
       </Field>
       <Submit className="w-full" pendingText="Entrando…">Entrar</Submit>
       <p className="text-center text-sm">
-        <Link href="/recuperar-senha" className="text-berry underline-offset-4 hover:underline">Esqueci minha senha</Link>
+        <Link href="/recuperar-senha" className="font-semibold text-ink underline-offset-4 hover:underline">Esqueci minha senha</Link>
       </p>
     </form>
   );

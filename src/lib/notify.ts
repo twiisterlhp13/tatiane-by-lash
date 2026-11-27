@@ -126,8 +126,8 @@ const ADAPTERS = { email: resendEmail, whatsapp: whatsappAdapter } as const;
 
 function textToHtml(text: string) {
   const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const linked = esc.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" style="color:#8a3d5c">$1</a>');
-  return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.55;color:#2b1d24;max-width:520px">${linked.replace(/\n/g, "<br>")}</div>`;
+  const linked = esc.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" style="color:#000000;font-weight:600">$1</a>');
+  return `<div style="font-family:Montserrat,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.55;color:#1c1719;max-width:520px">${linked.replace(/\n/g, "<br>")}</div>`;
 }
 
 /* ------------------------------------------------------------------ */

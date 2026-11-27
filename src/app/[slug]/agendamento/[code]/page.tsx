@@ -8,6 +8,7 @@ import { whatsappLink } from "@/lib/security";
 import { fmtLongDate, fmtTime, toLocalDate } from "@/lib/time";
 import { StatusBadge } from "@/components/ui";
 import { ManageActions } from "./manage-actions";
+import { GuardarNoAparelho } from "./guardar";
 
 export const metadata: Metadata = { title: "Meu agendamento", robots: { index: false, follow: false } };
 
@@ -23,7 +24,7 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
   if (!row) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10 text-center">
-        <h1 className="font-display text-3xl">Link inválido</h1>
+        <h1 className="text-[28px] font-bold">Link inválido</h1>
         <p className="mt-2 text-ink-2">Este link não é mais válido. Use o link mais recente que você recebeu ou encontre seu agendamento pelo código.</p>
         <Link href={`/${org.slug}/meu-agendamento`} className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-berry px-6 font-medium text-white">Encontrar meu agendamento</Link>
       </main>
@@ -39,14 +40,15 @@ export default async function ManagePage({ params, searchParams }: { params: Pro
 
   return (
     <main className="mx-auto max-w-xl px-5 py-8">
-      <Link href={`/${org.slug}`} className="mb-6 inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><ChevronLeft size={16} /> {org.name}</Link>
-      <div className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
+      <GuardarNoAparelho slug={org.slug} code={appt.code} token={t} />
+      <Link href={`/${org.slug}?aba=meus`} className="mb-6 inline-flex items-center gap-1 text-sm font-semibold text-ink-2 hover:text-ink"><ChevronLeft size={16} /> Meus horários</Link>
+      <div className="rounded-[24px] border border-line bg-white p-6 sm:p-8">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm text-muted">Código <span className="font-mono font-medium tracking-wider text-ink">{appt.code}</span></p>
+          <p className="text-sm text-muted">Código <span className="font-semibold tracking-wider text-ink">{appt.code}</span></p>
           <StatusBadge status={appt.status} />
         </div>
-        <h1 className="mt-3 font-display text-3xl">{fmtLongDate(appt.startsAt, tz)}</h1>
-        <p className="text-xl tnum">{fmtTime(appt.startsAt, tz)}</p>
+        <h1 className="mt-3 text-[26px] leading-tight font-bold">{fmtLongDate(appt.startsAt, tz)}</h1>
+        <p className="tnum text-[20px] font-semibold">{fmtTime(appt.startsAt, tz)}</p>
         <dl className="mt-6 space-y-2 border-t border-line pt-5 text-[15px]">
           <div className="flex justify-between gap-3"><dt className="text-muted">Serviço</dt><dd className="text-right font-medium">{appt.serviceName}</dd></div>
           <div className="flex justify-between gap-3"><dt className="text-muted">Com</dt><dd>{prof.name}</dd></div>

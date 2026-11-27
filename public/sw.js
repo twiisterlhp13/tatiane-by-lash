@@ -1,6 +1,6 @@
 // Service worker mínimo: permite instalar o painel como app e mostra uma página amigável sem internet.
 // Nunca guarda em cache dados da agenda (sempre vêm da rede).
-const CACHE = "tbl-shell-v1";
+const CACHE = "tbl-shell-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, Lock, Plus, RefreshCw } from "lucide-react";
-import { Fab } from "../nav";
+import { Fab } from "../fab";
 import { Button, Select, cx } from "@/components/ui";
 import { Modal } from "@/components/modal";
 import { addDays, fmtLocalDateLong, fmtLocalDateShort, minutesToHHMM, utcToLocalParts, weekdayOf } from "@/lib/time";
@@ -188,10 +188,10 @@ export function AgendaClient(props: {
       )}
 
       {/* Navegação flutuante ‹ HOJE › e botão + */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-30 flex items-center justify-start gap-3 pl-4 sm:justify-center sm:pl-0 lg:left-72">
-        <button aria-label="Anterior" onClick={() => shift(-1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-[#3a1828] text-white shadow-lg active:scale-95"><ChevronLeft size={22} /></button>
-        <button onClick={() => setDate(today)} className="pointer-events-auto rounded-full bg-white px-7 py-3 text-sm font-semibold tracking-wider text-ink shadow-lg ring-1 ring-line active:scale-95">HOJE</button>
-        <button aria-label="Próximo" onClick={() => shift(1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-[#3a1828] text-white shadow-lg active:scale-95"><ChevronRight size={22} /></button>
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom,0px))] z-20 flex items-center justify-start gap-3 pl-4 sm:justify-center sm:pl-0">
+        <button aria-label="Anterior" onClick={() => shift(-1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-rimel text-white shadow-lg active:scale-95"><ChevronLeft size={22} /></button>
+        <button onClick={() => setDate(today)} className="pointer-events-auto rounded-full bg-white px-7 py-3 text-sm font-semibold text-ink shadow-lg ring-1 ring-line active:scale-95">Hoje</button>
+        <button aria-label="Próximo" onClick={() => shift(1)} className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-rimel text-white shadow-lg active:scale-95"><ChevronRight size={22} /></button>
       </div>
       <Fab label="Agendar ou bloquear" onClick={() => setModal({ type: "slot", date: view === "month" ? today : date, time: "" })} />
 

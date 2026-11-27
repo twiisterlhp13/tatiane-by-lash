@@ -11,9 +11,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
   const sp = await searchParams;
   return (
     <AuthShell
-      title="Entrar no painel"
-      subtitle="Acesse sua agenda, clientes e serviços."
-      footer={<>Ainda não tem conta? <Link href="/cadastro" className="text-berry underline-offset-4 hover:underline">Criar conta grátis</Link></>}
+      title="Entrar"
+      subtitle="Acesse sua agenda, clientes e financeiro."
+      footer={<>Ainda não tem conta? <Link href="/cadastro" className="font-semibold text-ink underline-offset-4 hover:underline">Criar conta</Link></>}
     >
       <LoginForm next={sp.next} notice={sp.senha === "ok" ? "Senha alterada. Entre com a nova senha." : undefined} />
     </AuthShell>
