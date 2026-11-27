@@ -33,7 +33,7 @@ export default async function VitrinePage() {
         whatsapp: org.whatsapp,
         especialidades: org.specialties ?? [],
       }}
-      horario={{ weekdays: horario.weekdays, ini: horario.ini ?? "09:00", fim: horario.fim ?? "19:00", pausa: horario.pausa, texto: textoHorario(horario) }}
+      horario={{ weekdays: horario.weekdays, ini: horario.ini ?? "09:00", fim: horario.fim ?? "19:00", pausa: horario.pausa, texto: textoHorario(horario), uniforme: horario.uniforme }}
       servicos={servicos.map((s) => ({
         id: s.id,
         nome: s.name,

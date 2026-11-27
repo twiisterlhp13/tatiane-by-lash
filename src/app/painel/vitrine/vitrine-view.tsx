@@ -10,7 +10,7 @@ import { ESPECIALIDADES } from "@/lib/lash";
 import { addFotoAction, apagarFotoAction, apagarServicoAction, salvarHorarioAction, salvarPerfilAction, salvarServicoAction } from "./actions";
 
 type Perfil = { nome: string; foto: string | null; instagram: string; area: string; bio: string; whatsapp: string; especialidades: string[] };
-type Horario = { weekdays: number[]; ini: string; fim: string; pausa: { ini: string; fim: string } | null; texto: string };
+type Horario = { weekdays: number[]; ini: string; fim: string; pausa: { ini: string; fim: string } | null; texto: string; uniforme: boolean };
 type Servico = { id: string; nome: string; descricao: string; precoCents: number; preco: string; aPartir: boolean; minutos: number; duracao: string; online: boolean };
 type Foto = { id: string; src: string; legenda: string };
 
@@ -77,7 +77,7 @@ export function VitrineView({ podeEditar, podeServicos, link, slug, perfil, hora
         <Clock4 size={20} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-[15px] font-bold">Horário de atendimento</span>
-          <span className="block text-[13px] text-muted">{horario.texto ? horario.texto.charAt(0).toUpperCase() + horario.texto.slice(1) : "Defina os dias e horários em que atende"}{horario.pausa ? `, pausa das ${horario.pausa.ini} às ${horario.pausa.fim}` : ""}</span>
+          <span className="block text-[13px] text-muted">{horario.texto ? horario.texto.charAt(0).toUpperCase() + horario.texto.slice(1) : "Defina os dias e horários em que atende"}{horario.pausa ? `. Pausa das ${horario.pausa.ini} às ${horario.pausa.fim}` : ""}</span>
         </span>
         <ChevronRight size={17} className="text-muted" />
       </button>
@@ -220,6 +220,11 @@ function HorarioSheet({ open, onClose, horario }: { open: boolean; onClose: () =
       }
     >
       <div className="space-y-5 pt-2">
+        {!horario.uniforme && (
+          <p className="rounded-2xl bg-warn-soft px-4 py-3 text-[14px] text-warn">
+            Hoje alguns dias têm horários diferentes ({horario.texto}). Salvar aqui aplica o mesmo horário a todos os dias escolhidos.
+          </p>
+        )}
         <Chips multiple options={DIAS} value={dias} onChange={setDias} />
         <div className="grid grid-cols-2 gap-3">
           <label className="block"><Label>Início</Label><input className={inputCls} type="time" value={ini} onChange={(e) => setIni(e.target.value)} /></label>

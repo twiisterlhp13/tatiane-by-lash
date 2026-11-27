@@ -122,3 +122,17 @@ describe("conhecimento de lash", () => {
     expect(brl(-4400)).toBe("−⁠R$ 44,00");
   });
 });
+
+describe("texto do horário da vitrine", async () => {
+  const { resumoHorario, textoHorario } = await import("./horario");
+  const h = (wd: number, s: number, e: number) => ({ weekday: wd, startMinute: s * 60, endMinute: e * 60 });
+  it("junta dias seguidos com o mesmo horário", () => {
+    expect(textoHorario(resumoHorario([2, 3, 4, 5, 6].map((d) => h(d, 9, 19))))).toBe("de terça a sábado, das 9h às 19h");
+  });
+  it("mostra separado o dia que fecha mais cedo", () => {
+    const rows = [...[1, 2, 3, 4, 5].flatMap((d) => [h(d, 9, 12), h(d, 13, 19)]), h(6, 9, 15)];
+    const r = resumoHorario(rows);
+    expect(r.uniforme).toBe(false);
+    expect(textoHorario(r)).toBe("de segunda a sexta, das 9h às 19h; sábado, das 9h às 15h");
+  });
+});

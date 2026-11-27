@@ -3,7 +3,8 @@ import { and, asc, desc, eq, gte, isNull, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { Ctx } from "./auth";
 import type { Ag, Despesa, ItemEstoque } from "./negocio";
-import { addDays, minutesToHHMM, toLocalDate } from "./time";
+import { resumoHorario } from "./horario";
+import { addDays, toLocalDate } from "./time";
 
 const DAY = 86400000;
 
@@ -100,8 +101,6 @@ export async function loadProfissionais(orgId: string) {
     .orderBy(asc(schema.professionals.sortOrder), asc(schema.professionals.name));
 }
 
-const DIAS_CURTOS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
 /** Horário de atendimento resumido (para a vitrine e para a IA). */
 export async function loadHorario(orgId: string, professionalId: string | null) {
   const rows = professionalId
@@ -110,46 +109,7 @@ export async function loadHorario(orgId: string, professionalId: string | null) 
   return resumoHorario(rows);
 }
 
-export function resumoHorario(rows: { weekday: number; startMinute: number; endMinute: number }[]) {
-  const dias = [...new Set(rows.map((r) => r.weekday))].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
-  const ini = rows.length ? Math.min(...rows.map((r) => r.startMinute)) : null;
-  const fim = rows.length ? Math.max(...rows.map((r) => r.endMinute)) : null;
-  // pausa: espaço entre dois intervalos do mesmo dia (ex.: almoço), pelo dia mais comum
-  let pausa: { ini: number; fim: number } | null = null;
-  for (const d of dias) {
-    const l = rows.filter((r) => r.weekday === d).sort((a, b) => a.startMinute - b.startMinute);
-    if (l.length >= 2) {
-      pausa = { ini: l[0].endMinute, fim: l[1].startMinute };
-      break;
-    }
-  }
-  return {
-    weekdays: dias,
-    dias: dias.map((d) => DIAS_CURTOS[d]),
-    ini: ini === null ? null : minutesToHHMM(ini),
-    fim: fim === null ? null : minutesToHHMM(fim),
-    iniMin: ini,
-    fimMin: fim,
-    pausa: pausa && pausa.fim > pausa.ini ? { ini: minutesToHHMM(pausa.ini), fim: minutesToHHMM(pausa.fim) } : null,
-  };
-}
-
-/** "Ter a Sáb, das 9h às 19h" */
-export function textoHorario(h: { weekdays: number[]; ini: string | null; fim: string | null }) {
-  if (!h.weekdays.length || !h.ini || !h.fim) return "";
-  const ordem = h.weekdays.map((d) => (d + 6) % 7).sort((a, b) => a - b); // seg=0 … dom=6
-  const nomes = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"];
-  const seguidos = ordem.every((d, i) => i === 0 || d === ordem[i - 1] + 1);
-  const lista = ordem.map((d) => nomes[d]);
-  const dias =
-    seguidos && ordem.length > 2
-      ? `de ${nomes[ordem[0]]} a ${nomes[ordem[ordem.length - 1]]}`
-      : lista.length > 1
-        ? `${lista.slice(0, -1).join(", ")} e ${lista[lista.length - 1]}`
-        : lista[0];
-  const hh = (s: string) => (s.endsWith(":00") ? `${Number(s.slice(0, 2))}h` : s.replace(":", "h"));
-  return `${dias}, das ${hh(h.ini)} às ${hh(h.fim)}`;
-}
+export { resumoHorario, textoHorario } from "./horario";
 
 export function hojeLocal(tz: string) {
   return toLocalDate(new Date(), tz);
